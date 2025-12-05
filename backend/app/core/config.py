@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     
-    # Database
+    # Database - FIX: Use postgresql:// instead of postgres://
     DATABASE_URL: str = os.getenv("DATABASE_URL", "postgresql://user:password@localhost/chatwave")
     
     # Redis
@@ -30,7 +30,7 @@ class Settings(BaseSettings):
     ALLOWED_ORIGINS: List[str] = [
         "http://localhost:3000",
         "http://localhost:3001", 
-        "https://chatwave7-3ix3x6i0t-saffan-s-projects.vercel.app",
+        "https://chatwave-seven.vercel.app",
         os.getenv("FRONTEND_URL", "https://chatwave-seven.vercel.app"),
     ]
     
