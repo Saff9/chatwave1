@@ -10,12 +10,14 @@ from app.core.config import settings
 import uvicorn
 import logging
 
-# Create all tables
-models.Base.metadata.create_all(bind=engine)
-
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+# Create all tables (moved to startup event)
+def create_tables():
+    try:
+        models.Base.metadata.create_all(bind=engine)
+        logging.info("Database tables created successfully!")
+    except Exception as e:
+        logging.error(f"Error creating database tables: {e}")
+        raise
 
 app = FastAPI(
     title="ChatWave API",
@@ -53,6 +55,11 @@ def get_db():
         yield db
     finally:
         db.close()
+
+@app.on_event("startup")
+async def startup_event():
+    """Create database tables on startup"""
+    create_tables()
 
 @app.get("/")
 async def root():
