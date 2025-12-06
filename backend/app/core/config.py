@@ -14,8 +14,8 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     
-    # Database - Updated to use correct format
-    DATABASE_URL: str = os.getenv("DATABASE_URL", "postgresql://user:password@localhost/chatwave")
+    # Database - Updated for Supabase
+    DATABASE_URL: str = os.getenv("DATABASE_URL", "postgres://[email]:[password]@[host]:[port]/[database_name]?pgbouncer=true")
     
     # Redis
     REDIS_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379")
