@@ -13,7 +13,7 @@ def create_db_engine():
     database_url = settings.DATABASE_URL
     
     # Ensure we're using the correct PostgreSQL URL format for SQLAlchemy
-    # Convert postgresql:// to postgresql+psycopg2:// which is the correct driver format
+    # The psycopg2 driver is required for PostgreSQL connections
     if database_url.startswith("postgres://"):
         # Replace with psycopg2 driver which is required for PostgreSQL
         database_url = database_url.replace("postgres://", "postgresql+psycopg2://", 1)
@@ -60,13 +60,9 @@ if engine:
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     Base = declarative_base()
 else:
-    # This should not happen if connection is successful, but keep fallback
+    # This is critical - we need to handle the case where engine fails
     logger.error("Failed to create database engine!")
-    # In case of failure, we still need to define these to avoid import errors
-    from sqlalchemy import create_engine
-    temp_engine = create_engine("sqlite:///:memory:")
-    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=temp_engine)
-    Base = declarative_base()
+    raise Exception("Database engine creation failed - check your connection string")
 
 def get_db():
     """Dependency for getting database session"""
