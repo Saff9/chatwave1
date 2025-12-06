@@ -12,7 +12,7 @@ import uuid
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 @router.post("/register", response_model=Token)
 async def register(user: UserCreate, db: Session = Depends(get_db)):
@@ -81,20 +81,6 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = 
         "refresh_token": refresh_token,
         "token_type": "bearer"
     }
-
-@router.post("/refresh", response_model=Token)
-async def refresh_token(refresh_token: str, db: Session = Depends(get_db)):
-    """Refresh access token using refresh token"""
-    # In a real implementation, you'd validate the refresh token against a database
-    # For now, we'll just create a new access token
-    # This is simplified - you should implement proper refresh token validation
-    
-    # For demo purposes, we'll assume the refresh token is valid and extract user info
-    # In production, you should store refresh tokens in a database and validate them
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Refresh token implementation requires database storage of tokens"
-    )
 
 @router.get("/me", response_model=UserResponse)
 async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
