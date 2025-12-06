@@ -10,6 +10,7 @@ from app.core import socket_handler
 from app.core.config import settings
 import uvicorn
 import logging
+import os
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -24,18 +25,18 @@ app = FastAPI(
     redoc_url="/api/v1/redoc",
 )
 
-# CORS middleware
+# CORS middleware - Updated configuration
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["*"],  # Allow all HTTP methods
+    allow_headers=["*"],  # Allow all headers
     # Expose authorization header for client-side access
-    expose_headers=["Access-Control-Allow-Origin"]
+    expose_headers=["Access-Control-Allow-Origin", "Access-Control-Allow-Credentials", "Authorization"]
 )
 
-# Include routers
+# Include routers - Make sure auth router is included
 app.include_router(auth.router, prefix="/auth", tags=["authentication"])
 app.include_router(users.router, prefix="/users", tags=["users"])
 app.include_router(rooms.router, prefix="/rooms", tags=["rooms"])
@@ -95,4 +96,4 @@ async def health_check():
         return {"status": "limited", "service": "chatwave-api", "database": "not configured"}
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT", 8000)))
