@@ -8,32 +8,32 @@ import os
 logger = logging.getLogger(__name__)
 
 def create_db_engine():
-    """Create database engine with proper Render configuration"""
-    # Get the database URL from environment - this should be set by Render
+    """Create database engine with proper Supabase configuration"""
+    # Get the database URL from environment
     database_url = settings.DATABASE_URL
     
     # Ensure we're using the correct PostgreSQL URL format
-    if database_url.startswith("postgres://"):
-        # Render provides URLs in postgres:// format, SQLAlchemy expects postgresql://
-        database_url = database_url.replace("postgres://", "postgresql://", 1)
-        logger.info("Updated database URL to use postgresql:// format")
+    if database_url.startswith("postgresql://"):
+        # Convert to postgres:// format which SQLAlchemy expects
+        database_url = database_url.replace("postgresql://", "postgres://", 1)
+        logger.info("Updated database URL to use postgres:// format")
     
     logger.info(f"Connecting to database: {database_url[:50]}...")
     
     try:
-        # Create engine with proper settings for Render's PostgreSQL
+        # Create engine with proper settings for Supabase
         engine = create_engine(
             database_url,
             pool_pre_ping=True,  # Verify connections before use
             pool_recycle=300,    # Recycle connections every 5 minutes
-            pool_size=5,         # Smaller pool size for Render's free tier
+            pool_size=5,         # Smaller pool size for free tier
             max_overflow=10,     # Allow some overflow
             echo=settings.DEBUG, # Log SQL statements in debug mode
-            # Proper connection arguments for Render's PostgreSQL
+            # Proper connection arguments for Supabase
             connect_args={
                 "connect_timeout": 30,  # 30 second connection timeout
                 "options": "-c statement_timeout=30000",  # 30 second statement timeout
-                "sslmode": "require"    # Require SSL for Render
+                "sslmode": "require"    # Require SSL for Supabase
             }
         )
         
@@ -45,8 +45,6 @@ def create_db_engine():
     except Exception as e:
         logger.error(f"Database connection failed: {e}")
         # Don't raise the exception immediately - let the app start and handle gracefully
-        # This allows the app to start even if database isn't immediately available
-        # The health check endpoint will report the actual status
         return None
 
 # Create engine - this might be None if connection fails
