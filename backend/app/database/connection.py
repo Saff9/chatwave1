@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from app.core.config import settings
@@ -10,8 +10,8 @@ logger = logging.getLogger(__name__)
 
 def create_db_engine():
     """Create database engine with retry logic and proper URL handling"""
-    max_retries = 10
-    retry_delay = 3
+    max_retries = 5
+    retry_delay = 2
     
     # Ensure we're using the correct PostgreSQL URL format
     database_url = settings.DATABASE_URL
@@ -25,7 +25,7 @@ def create_db_engine():
     
     for attempt in range(max_retries):
         try:
-            # Create engine
+            # Create engine with proper connection settings for Render
             engine = create_engine(
                 database_url,
                 pool_pre_ping=True,
@@ -49,58 +49,34 @@ def create_db_engine():
                 time.sleep(retry_delay)
             else:
                 logger.error("Max retries reached. Could not connect to database.")
-                # Don't raise the exception - let the app start and handle database issues gracefully
-                # This allows the app to start even if database isn't immediately available
-                pass
+                raise e
     
-    # Return a dummy engine if connection fails (app can handle this gracefully)
-    try:
-        return create_engine("sqlite:///:memory:")  # Fallback
-    except:
-        # If all else fails, return None and handle in main app
-        return None
+    # If all attempts fail, raise an exception
+    raise Exception("Could not connect to database after multiple attempts")
 
 # Create engine with retry logic
 engine = create_db_engine()
 
-if engine:
-    # Create session
-    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+# Create session
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-    # Base class for models
-    Base = declarative_base()
+# Base class for models
+Base = declarative_base()
 
-    def get_db():
-        """Dependency for getting database session"""
-        db = SessionLocal()
-        try:
-            yield db
-        finally:
-            db.close()
-else:
-    # Handle the case where engine couldn't be created
-    engine = None
-    SessionLocal = None
-    Base = None
-
-    def get_db():
-        """Placeholder function when no database is available"""
-        yield None
+def get_db():
+    """Dependency for getting database session"""
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 def test_connection():
     """Test database connection"""
-    if not engine:
-        logger.error("No database engine available")
-        return False
-    
     try:
         with engine.connect() as connection:
-            # Execute a simple query to test the connection
-            result = connection.execute(text("SELECT 1"))
-            row = result.fetchone()
-            if row:
-                logger.info("Database connection test successful!")
-                return True
+            logger.info("Database connection test successful!")
+            return True
     except Exception as e:
         logger.error(f"Database connection test failed: {e}")
         return False
