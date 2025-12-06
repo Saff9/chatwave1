@@ -2,7 +2,8 @@ from fastapi import FastAPI, Depends, HTTPException, WebSocket, WebSocketDisconn
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
-from app.database.connection import engine, SessionLocal, test_connection
+from sqlalchemy import text  # Add this import
+from app.database.connection import engine, SessionLocal, test_connection, Base
 from app.models import models
 from app.routers import auth, users, rooms, messages
 from app.core import socket_handler
@@ -45,28 +46,32 @@ app.mount("/socket.io", socket_handler.socket_app)
 
 # Dependency
 def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+    if SessionLocal:
+        db = SessionLocal()
+        try:
+            yield db
+        finally:
+            db.close()
+    else:
+        yield None
 
 @app.on_event("startup")
 async def startup_event():
     """Create database tables on startup with error handling"""
-    try:
-        # Test database connection first
-        if test_connection():
-            # Create all tables
-            models.Base.metadata.create_all(bind=engine)
-            logger.info("Database tables created successfully!")
-        else:
-            logger.error("Failed to connect to database during startup")
-    except Exception as e:
-        logger.error(f"Error during startup: {e}")
-        # Don't crash the app if database isn't ready - it might be a temporary issue
-        # The app can still start and handle requests
-        logger.info("Continuing startup despite database connection issues...")
+    if engine:
+        try:
+            # Test database connection first
+            if test_connection():
+                # Create all tables
+                Base.metadata.create_all(bind=engine)
+                logger.info("Database tables created successfully!")
+            else:
+                logger.error("Failed to connect to database during startup")
+        except Exception as e:
+            logger.error(f"Error during startup: {e}")
+            logger.info("Continuing startup despite database connection issues...")
+    else:
+        logger.warning("No database engine available - running in limited mode")
 
 @app.get("/")
 async def root():
@@ -74,13 +79,20 @@ async def root():
 
 @app.get("/health")
 async def health_check():
-    try:
-        # Test database connection
-        with engine.connect() as conn:
-            conn.execute("SELECT 1")
-        return {"status": "healthy", "service": "chatwave-api", "database": "connected"}
-    except Exception as e:
-        return {"status": "unhealthy", "service": "chatwave-api", "database": "disconnected", "error": str(e)}
+    if engine:
+        try:
+            # Test database connection with proper SQLAlchemy text() wrapper
+            with engine.connect() as conn:
+                result = conn.execute(text("SELECT 1"))
+                row = result.fetchone()
+                if row:
+                    return {"status": "healthy", "service": "chatwave-api", "database": "connected"}
+                else:
+                    return {"status": "unhealthy", "service": "chatwave-api", "database": "connection_failed"}
+        except Exception as e:
+            return {"status": "unhealthy", "service": "chatwave-api", "database": "disconnected", "error": str(e)}
+    else:
+        return {"status": "limited", "service": "chatwave-api", "database": "not configured"}
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
