@@ -27,12 +27,12 @@ class Settings(BaseSettings):
     MAIL_PASSWORD: Optional[str] = os.getenv("MAIL_PASSWORD")
     
     # CORS
-    ALLOWED_ORIGINS: List[str] = [
-        "http://localhost:3000",
-        "http://localhost:3001", 
-        "https://chatwave-seven.vercel.app",
-        os.getenv("FRONTEND_URL", "https://chatwave-seven.vercel.app"),
-    ]
+   ALLOWED_ORIGINS: List[str] = [
+    "http://localhost:3000",  # for local development
+    "https://chatwave-seven.vercel.app",  # your Vercel domain
+    "https://chatwave-seven-git-main-saffan-s-projects.vercel.app",  # if you have this
+    # Add your specific Vercel URL
+]
     
     # Debug
     DEBUG: bool = os.getenv("DEBUG", "False").lower() == "true"
