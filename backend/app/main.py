@@ -46,6 +46,11 @@ app.mount("/socket.io", socket_handler.socket_app)
 
 # Dependency
 def get_db():
+    if not SessionLocal:
+        logger.error("No database session available")
+        yield None
+        return
+        
     db = SessionLocal()
     try:
         yield db
@@ -55,6 +60,10 @@ def get_db():
 @app.on_event("startup")
 async def startup_event():
     """Create database tables on startup with error handling"""
+    if not engine:
+        logger.error("No database engine available during startup")
+        return
+        
     try:
         # Test database connection first
         if test_connection():
