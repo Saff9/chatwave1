@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     
-    # Database - FIX: Use postgresql:// instead of postgres://
+    # Database
     DATABASE_URL: str = os.getenv("DATABASE_URL", "postgresql://user:password@localhost/chatwave")
     
     # Redis
@@ -26,13 +26,16 @@ class Settings(BaseSettings):
     MAIL_USERNAME: Optional[str] = os.getenv("MAIL_USERNAME")
     MAIL_PASSWORD: Optional[str] = os.getenv("MAIL_PASSWORD")
     
-    # CORS
-   ALLOWED_ORIGINS: List[str] = [
-    "http://localhost:3000",  # for local development
-    "https://chatwave7.vercel.app",  # your Vercel domain
-    "https://chatwave-seven-git-main-saffan-s-projects.vercel.app",  # if you have this
-    # Add your specific Vercel URL
-]
+    # CORS - Updated to include all your frontend domains
+    ALLOWED_ORIGINS: List[str] = [
+        "http://localhost:3000",  # Local development
+        "http://localhost:3001",  # Alternative local port
+        "https://chatwave-seven.vercel.app",  # Your main Vercel domain
+        "https://chatwave-seven-git-main-saffan-s-projects.vercel.app",  # Alternative Vercel domain
+        "https://chatwave7.vercel.app",  # Your current working frontend
+        "https://chatwave7-lj07u4wqg-saffan-s-projects.vercel.app",  # Your other Vercel domain
+        # Add any other domains you might use
+    ]
     
     # Debug
     DEBUG: bool = os.getenv("DEBUG", "False").lower() == "true"
