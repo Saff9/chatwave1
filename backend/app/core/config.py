@@ -29,7 +29,7 @@ class Settings(BaseSettings):
     # CORS
    ALLOWED_ORIGINS: List[str] = [
     "http://localhost:3000",  # for local development
-    "https://chatwave-seven.vercel.app",  # your Vercel domain
+    "https://chatwave7.vercel.app",  # your Vercel domain
     "https://chatwave-seven-git-main-saffan-s-projects.vercel.app",  # if you have this
     # Add your specific Vercel URL
 ]
