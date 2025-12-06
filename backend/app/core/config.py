@@ -14,8 +14,8 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     
-    # Database - Updated for Supabase
-    DATABASE_URL: str = os.getenv("DATABASE_URL", "postgres://[email]:[password]@[host]:[port]/[database_name]?pgbouncer=true")
+    # Database - Updated for Supabase (use the exact connection string from Supabase)
+    DATABASE_URL: str = os.getenv("DATABASE_URL", "postgresql+psycopg2://postgres:.UXkBe*Npv73!w5@db.edgdiwssxqgnayydwahc.supabase.co:5432/postgres")
     
     # Redis
     REDIS_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379")
