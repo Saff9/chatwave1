@@ -12,11 +12,16 @@ def create_db_engine():
     # Get the database URL from environment
     database_url = settings.DATABASE_URL
     
-    # Ensure we're using the correct PostgreSQL URL format
-    if database_url.startswith("postgresql://"):
-        # Convert to postgres:// format which SQLAlchemy expects
-        database_url = database_url.replace("postgresql://", "postgres://", 1)
-        logger.info("Updated database URL to use postgres:// format")
+    # Ensure we're using the correct PostgreSQL URL format for SQLAlchemy
+    # Convert postgresql:// to postgresql+psycopg2:// which is the correct driver format
+    if database_url.startswith("postgres://"):
+        # Replace with psycopg2 driver which is required for PostgreSQL
+        database_url = database_url.replace("postgres://", "postgresql+psycopg2://", 1)
+        logger.info("Updated database URL to use postgresql+psycopg2:// format")
+    elif database_url.startswith("postgresql://"):
+        # Replace with psycopg2 driver which is required for PostgreSQL
+        database_url = database_url.replace("postgresql://", "postgresql+psycopg2://", 1)
+        logger.info("Updated database URL to use postgresql+psycopg2:// format")
     
     logger.info(f"Connecting to database: {database_url[:50]}...")
     
@@ -55,14 +60,21 @@ if engine:
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     Base = declarative_base()
 else:
-    # Fallback - create a dummy engine and session maker if connection fails
+    # This should not happen if connection is successful, but keep fallback
+    logger.error("Failed to create database engine!")
+    # In case of failure, we still need to define these to avoid import errors
     from sqlalchemy import create_engine
-    engine = create_engine("sqlite:///:memory:")  # In-memory SQLite as fallback
-    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    temp_engine = create_engine("sqlite:///:memory:")
+    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=temp_engine)
     Base = declarative_base()
 
 def get_db():
     """Dependency for getting database session"""
+    if not engine:
+        logger.error("No database engine available!")
+        yield None
+        return
+        
     db = SessionLocal()
     try:
         yield db
