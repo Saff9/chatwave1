@@ -2,7 +2,7 @@ from fastapi import FastAPI, Depends, HTTPException, WebSocket, WebSocketDisconn
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
-from sqlalchemy import text  # Add this import
+from sqlalchemy import text
 from app.database.connection import engine, SessionLocal, test_connection, Base
 from app.models import models
 from app.routers import auth, users, rooms, messages
@@ -25,18 +25,17 @@ app = FastAPI(
     redoc_url="/api/v1/redoc",
 )
 
-# CORS middleware - Updated configuration
+# CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],  # Allow all HTTP methods
-    allow_headers=["*"],  # Allow all headers
-    # Expose authorization header for client-side access
+    allow_methods=["*"],
+    allow_headers=["*"],
     expose_headers=["Access-Control-Allow-Origin", "Access-Control-Allow-Credentials", "Authorization"]
 )
 
-# Include routers - Make sure auth router is included
+# Include routers
 app.include_router(auth.router, prefix="/auth", tags=["authentication"])
 app.include_router(users.router, prefix="/users", tags=["users"])
 app.include_router(rooms.router, prefix="/rooms", tags=["rooms"])
@@ -63,10 +62,9 @@ async def startup_event():
             Base.metadata.create_all(bind=engine)
             logger.info("Database tables created successfully!")
         else:
-            logger.error("Failed to connect to database during startup")
+            logger.warning("Database connection failed during startup")
     except Exception as e:
         logger.error(f"Error during startup: {e}")
-        logger.info("Continuing startup despite database connection issues...")
 
 @app.get("/")
 async def root():
@@ -74,17 +72,22 @@ async def root():
 
 @app.get("/health")
 async def health_check():
-    try:
-        # Test database connection with proper SQLAlchemy text() wrapper
-        with engine.connect() as conn:
-            result = conn.execute(text("SELECT 1"))
-            row = result.fetchone()
-            if row:
-                return {"status": "healthy", "service": "chatwave-api", "database": "connected"}
-            else:
-                return {"status": "unhealthy", "service": "chatwave-api", "database": "connection_failed"}
-    except Exception as e:
-        return {"status": "unhealthy", "service": "chatwave-api", "database": "disconnected", "error": str(e)}
+    if engine:
+        try:
+            # Test database connection with proper SQLAlchemy text() wrapper
+            with engine.connect() as conn:
+                result = conn.execute(text("SELECT 1"))
+                row = result.fetchone()
+                if row:
+                    return {"status": "healthy", "service": "chatwave-api", "database": "connected"}
+                else:
+                    return {"status": "unhealthy", "service": "chatwave-api", "database": "connection_failed"}
+        except Exception as e:
+            return {"status": "unhealthy", "service": "chatwave-api", "database": "disconnected", "error": str(e)}
+    else:
+        return {"status": "unhealthy", "service": "chatwave-api", "database": "not configured"}
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT", 8000)))
+    port = int(os.getenv("PORT", 8000))
+    logger.info(f"Starting server on port {port}")
+    uvicorn.run(app, host="0.0.0.0", port=port)
